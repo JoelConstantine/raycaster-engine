@@ -2,24 +2,41 @@ import { render, setDisplay } from "./render.js";
 import { initControls, PLAYER_ACTIONS } from "./controls.js";
 
 // prettier-ignore
-const map = [
-  1, 1, 1, 1, 1, 1, 1, 1, 
-  1, 0, 0, 0, 0, 0, 0, 1, 
-  1, 0, 0, 0, 0, 0, 0, 1, 
-  1, 0, 0, 0, 0, 0, 0, 1, 
-  1, 0, 0, 0, 0, 0, 0, 1, 
-  1, 0, 0, 0, 0, 0, 0, 1, 
-  1, 0, 0, 0, 0, 0, 0, 1, 
-  1, 1, 1, 1, 1, 1, 1, 1,
-];
+const map = {
+  map_width: 8,
+  map_height: 8,
+  map_size: 64,
+  layout: [
+    1, 1, 1, 1, 1, 1, 1, 1, 
+    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 1, 1, 1, 1, 1, 1, 1,
+  ]
+};
 
 const updateGameState = (gameState, controls) => {
   const { player } = gameState;
   let { x, y } = player;
-  if (controls.forward) y -= 1;
-  if (controls.left) x -= 1;
-  if (controls.right) x += 1;
-  if (controls.down) y += 1;
+
+  const mapbounds_x = 64 * 8,
+    mapbounds_y = 64 * 8;
+
+  if (controls.forward) {
+    y > 0 ? (y -= 1) : 0;
+  }
+  if (controls.left) {
+    x > 0 ? (x -= 1) : 0;
+  }
+  if (controls.right) {
+    x < mapbounds_x ? (x += 1) : mapbounds_x;
+  }
+  if (controls.down) {
+    y < mapbounds_y ? (y += 1) : mapbounds_y;
+  }
   return {
     ...gameState,
     player: {
@@ -42,10 +59,26 @@ const gameLoop = (display, gameState, controls, lastTime) => (time) => {
   requestAnimationFrame(gameLoop(display, game_state, controls, lastTime));
 };
 
-const initGameState = () => {
+const initDisplay = () => {
+  const canvas = document.getElementById("display");
+  const resolution_height = 800;
+  const window_ratio = window.outerWidth / window.outerHeight;
+
+  const viewport = {
+    height: resolution_height,
+    width: resolution_height * window_ratio,
+  };
+
+  return {
+    canvas,
+    viewport,
+  };
+};
+
+const initGameState = (debug = false) => {
   const player = {
-    x: 300,
-    y: 300,
+    x: 16,
+    y: 16,
     inputs: {
       forward: false,
       backward: false,
@@ -57,16 +90,21 @@ const initGameState = () => {
   return {
     player,
     map,
+    debug,
   };
 };
 
 function main() {
-  const display = document.getElementById("display");
-  const gameState = initGameState();
+  const display = initDisplay();
+  const gameState = initGameState(true);
 
-  setDisplay(display);
+  setDisplay(display.canvas);
   const controls = initControls(gameState.player, PLAYER_ACTIONS);
   requestAnimationFrame(gameLoop(display, gameState, controls, 0));
+
+  window.onresize = () => {
+    setDisplay(display.canvas);
+  };
 }
 
 main();
