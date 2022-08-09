@@ -1,0 +1,19 @@
+{
+  "name": "@royal/raycaster",
+  "version": "0.0.1",
+  "description": "A raycaster engine built from scratch following a tutorial",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite src --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite serve src"
+  },
+  "author": "Royal",
+  "license": "ISC",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "prettier": "^2.7.1",
+    "vite": "^3.0.5"
+  }
+}
