@@ -9,40 +9,75 @@ const map = {
   layout: [
     1, 1, 1, 1, 1, 1, 1, 1, 
     1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 1, 0, 0, 0, 0, 1, 
     1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 0, 0, 0, 0, 0, 0, 1, 
-    1, 0, 0, 0, 0, 0, 0, 1, 
+    1, 0, 0, 0, 1, 1, 0, 1, 
+    1, 0, 0, 0, 1, 0, 0, 1, 
     1, 0, 0, 0, 0, 0, 0, 1, 
     1, 1, 1, 1, 1, 1, 1, 1,
   ]
 };
 
-const updateGameState = (gameState, controls) => {
-  const { player } = gameState;
-  let { x, y } = player;
+const updatePlayer = (
+  { player_x, player_y, delta_x, delta_y, angle },
+  controls,
+) => {
+  const { PI } = Math;
+  let x = player_x,
+    y = player_y;
 
   const mapbounds_x = 64 * 8,
     mapbounds_y = 64 * 8;
 
   if (controls.forward) {
-    y > 0 ? (y -= 1) : 0;
+    x += delta_x;
+    y += delta_y;
   }
   if (controls.left) {
-    x > 0 ? (x -= 1) : 0;
+    angle -= 0.01;
+    if (angle < 0) {
+      console.log("correcting left");
+      angle += 2 * PI;
+    }
+    delta_x = Math.cos(angle);
+    delta_y = Math.sin(angle);
   }
   if (controls.right) {
-    x < mapbounds_x ? (x += 1) : mapbounds_x;
+    angle += 0.01;
+    if (angle > 2 * PI) {
+      console.log("correcting rihgt");
+      angle -= 2 * PI;
+    }
+    delta_x = Math.cos(angle);
+    delta_y = Math.sin(angle);
   }
   if (controls.down) {
-    y < mapbounds_y ? (y += 1) : mapbounds_y;
+    x -= delta_x;
+    y -= delta_y;
   }
+
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x > mapbounds_x) x = mapbounds_x;
+  if (y > mapbounds_y) y = mapbounds_y;
+
+  return {
+    player_x: x,
+    player_y: y,
+    delta_x,
+    delta_y,
+    angle,
+  };
+};
+
+const updateGameState = (gameState, controls) => {
+  const { player } = gameState;
+  const player_position = updatePlayer(player, controls);
   return {
     ...gameState,
     player: {
       ...player,
-      x,
-      y,
+      ...player_position,
     },
   };
 };
@@ -77,14 +112,11 @@ const initDisplay = () => {
 
 const initGameState = (debug = false) => {
   const player = {
-    x: 16,
-    y: 16,
-    inputs: {
-      forward: false,
-      backward: false,
-      left: false,
-      right: false,
-    },
+    player_x: 64,
+    player_y: 64,
+    delta_x: Math.cos(0),
+    delta_y: Math.sin(0),
+    angle: 0,
   };
 
   return {
@@ -99,7 +131,7 @@ function main() {
   const gameState = initGameState(true);
 
   setDisplay(display.canvas);
-  const controls = initControls(gameState.player, PLAYER_ACTIONS);
+  const controls = initControls(PLAYER_ACTIONS);
   requestAnimationFrame(gameLoop(display, gameState, controls, 0));
 
   window.onresize = () => {

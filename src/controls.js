@@ -1,3 +1,5 @@
+import _ from "lodash";
+
 const KEY_CODES = {
   BACKSPACE: 8,
   TAB: 9,
@@ -60,8 +62,14 @@ const PLAYER_ACTIONS = {
   [KEY_CODES.D]: "right",
 };
 
-function initControls(player, player_actions) {
-  let state = player.inputs;
+function initControls(player_actions) {
+  const state_keys = Object.keys(player_actions);
+
+  let state = _.reduce(
+    state_keys,
+    (value, key) => ({ ...value, [player_actions[key]]: false }),
+    {},
+  );
 
   const _onKey = (val, player_actions) => (e) => {
     const action = player_actions[e.keyCode];
