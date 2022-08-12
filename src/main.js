@@ -18,23 +18,62 @@ const map = {
   ]
 };
 
+let frame1, frame2, fps;
+
 const updatePlayer = (
   { player_x, player_y, delta_x, delta_y, angle },
   controls,
+  { layout, map_width },
+  context,
 ) => {
   const { PI } = Math;
   let x = player_x,
     y = player_y;
 
+  // set an offset
+  const player_offset = {
+    x: delta_x < 0 ? -20 : 20,
+    y: delta_y < 0 ? -20 : 20,
+  };
+
+  frame2 = Date.now();
+  fps = (frame2 - frame1) / 2;
+  frame1 = Date.now();
+
   const mapbounds_x = 64 * 8,
     mapbounds_y = 64 * 8;
 
+  const player_position_start = {
+    x: parseInt(x / 64),
+    y: parseInt(y / 64),
+    x_add: parseInt((x + player_offset.x) / 64),
+    y_add: parseInt((y + player_offset.y) / 64),
+    x_sub: parseInt((x - player_offset.x) / 64),
+    y_sub: parseInt((y - player_offset.y) / 64),
+  };
+
+  // control moving forward and backwards
   if (controls.forward) {
-    x += delta_x;
-    y += delta_y;
+    const pos_y = player_position_start.y * map_width;
+    const offset_y = player_position_start.y_add * map_width;
+    const idx = pos_y + player_position_start.x_add;
+    const idy = offset_y + player_position_start.x;
+
+    x += layout[parseInt(idx)] === 0 ? delta_x * fps : 0;
+    y += layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
   }
+  if (controls.down) {
+    x -= delta_x * fps;
+    y -= delta_y * fps;
+  }
+  // if (controls.strafe_left) {
+  //   x += delta_x;
+  //   y -= delta_y;
+  // }
+
+  // control turning left and right
   if (controls.left) {
-    angle -= 0.01;
+    angle -= 0.01 * fps;
     if (angle < 0) {
       console.log("correcting left");
       angle += 2 * PI;
@@ -43,17 +82,13 @@ const updatePlayer = (
     delta_y = Math.sin(angle);
   }
   if (controls.right) {
-    angle += 0.01;
+    angle += 0.01 * fps;
     if (angle > 2 * PI) {
       console.log("correcting rihgt");
       angle -= 2 * PI;
     }
     delta_x = Math.cos(angle);
     delta_y = Math.sin(angle);
-  }
-  if (controls.down) {
-    x -= delta_x;
-    y -= delta_y;
   }
 
   if (x < 0) x = 0;
@@ -67,12 +102,14 @@ const updatePlayer = (
     delta_x,
     delta_y,
     angle,
+    player_offset,
   };
 };
 
-const updateGameState = (gameState, controls) => {
-  const { player } = gameState;
-  const player_position = updatePlayer(player, controls);
+const updateGameState = (gameState, controls, context) => {
+  const { player, map } = gameState;
+
+  const player_position = updatePlayer(player, controls, map, context);
   return {
     ...gameState,
     player: {
@@ -86,8 +123,10 @@ const gameLoop = (display, gameState, controls, lastTime) => (time) => {
   let game_state = gameState;
   const seconds = (time - lastTime) / 1000;
   lastTime = time;
+
   if (seconds < 0.2) {
-    game_state = updateGameState(gameState, controls.getState());
+    const ctx = display.canvas.getContext("2d");
+    game_state = updateGameState(gameState, controls.getState(), ctx);
     render(display, game_state);
   }
 
@@ -117,6 +156,7 @@ const initGameState = (debug = false) => {
     delta_x: Math.cos(0),
     delta_y: Math.sin(0),
     angle: 0,
+    player_offset: {},
   };
 
   return {
