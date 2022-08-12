@@ -137,8 +137,8 @@ function castRays(
 
     disT = disT * Math.cos(calculated_angle);
 
-    let line_height = (map_size * 799) / disT;
-    if (line_height > 799) line_height = 799;
+    let line_height = (map_size * 100) / disT;
+    if (line_height > 100) line_height = 100;
 
     ray_angle += one_degree;
     if (ray_angle < 0) {

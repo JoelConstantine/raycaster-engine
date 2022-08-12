@@ -15,14 +15,15 @@ function _drawRays3d(context, { rays }, window) {
   context.fillRect(x, y, width, height);
 
   rays.forEach((ray, ridx) => {
-    const line_offset = middle - ray.line_height / 2;
+    const height_ratio = (height * ray.line_height) / 100;
+    const line_offset = middle - height_ratio / 2;
     context.lineWidth = line_width + 1;
     context.strokeStyle = colors.PLAYER_COLOR;
     context.beginPath();
-    context.moveTo(ridx * line_width + x + line_width / 2, line_offset);
+    context.moveTo(ridx * line_width + x + line_width / 2, y + line_offset);
     context.lineTo(
       ridx * line_width + x + line_width / 2,
-      ray.line_height + line_offset,
+      height - line_offset,
     );
     context.stroke();
     context.closePath();
@@ -134,8 +135,8 @@ const render = ({ canvas, viewport }, gameState) => {
   const map_3d_window = {
     x: 0,
     y: 0,
-    width: 1280,
-    height: 800,
+    width: canvas.width,
+    height: canvas.height,
   };
 
   _drawBackground(ctx, canvas);
