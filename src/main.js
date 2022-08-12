@@ -1,5 +1,6 @@
 import { render, setDisplay } from "./render.js";
 import { initControls, PLAYER_ACTIONS } from "./controls.js";
+import { castRays } from "./map.js";
 
 // prettier-ignore
 const map = {
@@ -24,7 +25,6 @@ const updatePlayer = (
   { player_x, player_y, delta_x, delta_y, angle },
   controls,
   { layout, map_width },
-  context,
 ) => {
   const { PI } = Math;
   let x = player_x,
@@ -63,8 +63,13 @@ const updatePlayer = (
     y += layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
   }
   if (controls.down) {
-    x -= delta_x * fps;
-    y -= delta_y * fps;
+    const pos_y = player_position_start.y * map_width;
+    const offset_y = player_position_start.x_sub * map_width;
+    const idx = pos_y + player_position_start.x_sub;
+    const idy = offset_y + player_position_start.y;
+
+    x -= layout[parseInt(idx)] === 0 ? delta_x * fps : 0;
+    y -= layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
   }
   // if (controls.strafe_left) {
   //   x += delta_x;
@@ -110,12 +115,17 @@ const updateGameState = (gameState, controls, context) => {
   const { player, map } = gameState;
 
   const player_position = updatePlayer(player, controls, map, context);
+
+  const rays = castRays(player, map);
+
   return {
     ...gameState,
+
     player: {
       ...player,
       ...player_position,
     },
+    rays,
   };
 };
 
@@ -125,8 +135,7 @@ const gameLoop = (display, gameState, controls, lastTime) => (time) => {
   lastTime = time;
 
   if (seconds < 0.2) {
-    const ctx = display.canvas.getContext("2d");
-    game_state = updateGameState(gameState, controls.getState(), ctx);
+    game_state = updateGameState(gameState, controls.getState());
     render(display, game_state);
   }
 
@@ -135,7 +144,7 @@ const gameLoop = (display, gameState, controls, lastTime) => (time) => {
 
 const initDisplay = () => {
   const canvas = document.getElementById("display");
-  const resolution_height = 800;
+  const resolution_height = window.innerHeight;
   const window_ratio = window.outerWidth / window.outerHeight;
 
   const viewport = {
