@@ -71,10 +71,24 @@ const updatePlayer = (
     x -= layout[parseInt(idx)] === 0 ? delta_x * fps : 0;
     y -= layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
   }
-  // if (controls.strafe_left) {
-  //   x += delta_x;
-  //   y -= delta_y;
-  // }
+  if (controls.strafe_left) {
+    // TODO: Check where the player is strafing too for movement
+    const new_angle = angle - PI / 2;
+
+    const strafe_delta_x = Math.cos(new_angle);
+    const strafe_delta_y = Math.sin(new_angle);
+    x += strafe_delta_x;
+    y += strafe_delta_y;
+  }
+  if (controls.strafe_right) {
+    // TODO: Check where the player is strafing too for movement
+    const new_angle = angle + PI / 2;
+
+    const strafe_delta_x = Math.cos(new_angle);
+    const strafe_delta_y = Math.sin(new_angle);
+    x += strafe_delta_x;
+    y += strafe_delta_y;
+  }
 
   // control turning left and right
   if (controls.left) {

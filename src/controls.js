@@ -61,6 +61,7 @@ const PLAYER_ACTIONS = {
   [KEY_CODES.S]: "down",
   [KEY_CODES.D]: "right",
   [KEY_CODES.LEFT]: "strafe_left",
+  [KEY_CODES.RIGHT]: "strafe_right",
 };
 
 function initControls(player_actions) {
