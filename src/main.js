@@ -94,7 +94,6 @@ const updatePlayer = ({ player, map, fps }, controls) => {
   if (left) {
     angle -= 0.01 * fps;
     if (angle < 0) {
-      console.log("correcting left");
       angle += 2 * PI;
     }
     delta_x = Math.cos(angle);
@@ -103,7 +102,6 @@ const updatePlayer = ({ player, map, fps }, controls) => {
   if (right) {
     angle += 0.01 * fps;
     if (angle > 2 * PI) {
-      console.log("correcting rihgt");
       angle -= 2 * PI;
     }
     delta_x = Math.cos(angle);
@@ -126,6 +124,9 @@ const updatePlayer = ({ player, map, fps }, controls) => {
 };
 
 const updateGameState = (gameState, controls) => {
+  const { paused } = controls;
+  if (paused) return { ...gameState, paused };
+
   const { player, map } = gameState;
 
   frame2 = Date.now();
@@ -145,16 +146,18 @@ const updateGameState = (gameState, controls) => {
       ...player,
       ...player_position,
     },
+    paused,
     rays,
   };
 };
 
 const gameLoop = (display, gameState, controls, lastTime) => (time) => {
-  let game_state = gameState;
+  let game_state = {
+    ...gameState,
+  };
+
   const seconds = (time - lastTime) / 1000;
   lastTime = time;
-
-  const { paused } = controls.getState();
 
   if (seconds < 0.2) {
     game_state = updateGameState(gameState, controls.getState());
@@ -202,6 +205,7 @@ function main() {
   const gameState = initGameState(true);
 
   setDisplay(display.canvas);
+  //const controls = initControls(PLAYER_ACTIONS);
   const controls = initControls(PLAYER_ACTIONS);
   requestAnimationFrame(gameLoop(display, gameState, controls, 0));
 

@@ -8,7 +8,7 @@ function castRays(
   { player_x, player_y, angle },
   { map_width, map_size, map_height, layout },
 ) {
-  const FOV = 60;
+  const FOV = 80;
 
   const PI = Math.PI;
   const P2 = Math.PI / 2;
@@ -114,17 +114,25 @@ function castRays(
       }
     }
 
+    let wall_type;
+
+    // horizontal wall
     if (disH < disV) {
       ray_x = horizontal_x;
       ray_y = horizontal_y;
       disT = disH;
+      wall_type = "h";
     }
-    if (disH > disV) {
+
+    // vertical wall
+    if (disV < disH) {
       ray_x = vertical_x;
       ray_y = vertical_y;
       disT = disV;
+      wall_type = "v";
     }
 
+    // compensates for distance to reduce fisheye effect
     let calculated_angle = angle - ray_angle;
 
     if (calculated_angle < 0) {
@@ -140,6 +148,7 @@ function castRays(
     let line_height = (map_size * 100) / disT;
     if (line_height > 100) line_height = 100;
 
+    // update the loop
     ray_angle += one_degree;
     if (ray_angle < 0) {
       ray_angle += 2 * PI;
@@ -153,6 +162,7 @@ function castRays(
       ray_x,
       ray_y,
       line_height,
+      wall_type,
     });
   }
 

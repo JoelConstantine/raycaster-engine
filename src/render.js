@@ -3,7 +3,16 @@ const colors = {
   PLAYER_COLOR: "rgb(232,17,64)",
   WALL_COLOR: "rgb(255,255,255)",
   VIEWPORT: "rgb(125,125,125)",
+  WALLS: {
+    h: "rgb(240,60,0)",
+    v: "rgb(120,30,0)",
+  },
 };
+
+function _renderPaused(context, { width, height }) {
+  context.fillStyle = "rgba(0,0,0,0.5)";
+  context.fillRect(0, 0, width, height);
+}
 
 function _drawRays3d(context, { rays }, window) {
   const { x = 0, y = 0, width = 480, height = 480 } = window;
@@ -12,13 +21,16 @@ function _drawRays3d(context, { rays }, window) {
   const middle = height / 2;
 
   context.fillStyle = "rgb(0,255,255)";
-  context.fillRect(x, y, width, height);
+  context.fillRect(x, y, width, height / 2);
+  context.fillStyle = "rgb(0,125,0)";
+  context.fillRect(x, y + height / 2, width, height / 2);
 
   rays.forEach((ray, ridx) => {
     const height_ratio = (height * ray.line_height) / 100;
     const line_offset = middle - height_ratio / 2;
+    const wall_color = colors.WALLS[ray.wall_type];
     context.lineWidth = line_width + 1;
-    context.strokeStyle = colors.PLAYER_COLOR;
+    context.strokeStyle = wall_color;
     context.beginPath();
     context.moveTo(ridx * line_width + x + line_width / 2, y + line_offset);
     context.lineTo(
@@ -49,10 +61,10 @@ function _drawPlayer(
 ) {
   context.fillStyle = colors.PLAYER_COLOR;
   context.fillRect(
-    player_x - scale / 2,
-    player_y - scale / 2,
-    1 * scale,
-    1 * scale,
+    player_x - scale / 2 / 2,
+    player_y - scale / 2 / 2,
+    (1 * scale) / 2,
+    (1 * scale) / 2,
   );
 
   // const offset_x = player_x + delta_x * Math.abs(player_offset.x);
@@ -147,6 +159,9 @@ const render = ({ canvas, viewport }, gameState) => {
 
   _draw2dMap(ctx, gameState, gameState.rays, map_2d_window);
 
+  if (gameState.paused) {
+    _renderPaused(ctx, canvas);
+  }
   if (gameState.debug) {
   }
 };

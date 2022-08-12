@@ -54,36 +54,49 @@ const KEY_CODES = {
   Z: 90,
   TILDA: 192,
 };
-
 const PLAYER_ACTIONS = {
-  [KEY_CODES.W]: "forward",
-  [KEY_CODES.S]: "backward",
-  [KEY_CODES.A]: "left",
-  [KEY_CODES.D]: "right",
-  [KEY_CODES.LEFT]: "strafe_left",
-  [KEY_CODES.RIGHT]: "strafe_right",
-  [KEY_CODES.ESC]: "paused",
+  holds: {
+    [KEY_CODES.W]: "forward",
+    [KEY_CODES.S]: "backward",
+    [KEY_CODES.A]: "left",
+    [KEY_CODES.D]: "right",
+    [KEY_CODES.LEFT]: "strafe_left",
+    [KEY_CODES.RIGHT]: "strafe_right",
+  },
+  toggles: { [KEY_CODES.ESC]: "paused" },
 };
 
 function initControls(player_actions) {
-  const state_keys = Object.keys(player_actions);
+  const action_types = Object.keys(player_actions);
 
-  let state = _.reduce(
-    state_keys,
-    (value, key) => ({ ...value, [player_actions[key]]: false }),
-    {},
-  );
+  const state = action_types.reduce((value, key) => {
+    const state_keys = Object.keys(player_actions[key]);
+    const current_state = state_keys.reduce(
+      (value, nested_key) => ({
+        ...value,
+        [player_actions[key][nested_key]]: false,
+      }),
+      {},
+    );
+    return { ...value, ...current_state };
+  }, {});
 
-  const _onKey = (val, player_actions) => (e) => {
-    const action = player_actions[e.keyCode];
-    if (!action) return;
-    state[action] = val;
+  const _onKeyPress = (val, player_actions) => (e) => {
+    const hold_action = player_actions.holds[e.keyCode];
+    if (hold_action) state[hold_action] = val;
+    if (!val) return;
+    const toggle_action = player_actions.toggles[e.keyCode];
+    if (toggle_action) state[toggle_action] = !state[toggle_action];
     e.preventDefault();
     e.stopPropagation();
   };
 
-  document.addEventListener("keydown", _onKey(true, player_actions), false);
-  document.addEventListener("keyup", _onKey(false, player_actions), false);
+  document.addEventListener(
+    "keydown",
+    _onKeyPress(true, player_actions),
+    false,
+  );
+  document.addEventListener("keyup", _onKeyPress(false, player_actions), false);
 
   return {
     getState: () => state,
