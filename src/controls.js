@@ -57,11 +57,12 @@ const KEY_CODES = {
 
 const PLAYER_ACTIONS = {
   [KEY_CODES.W]: "forward",
+  [KEY_CODES.S]: "backward",
   [KEY_CODES.A]: "left",
-  [KEY_CODES.S]: "down",
   [KEY_CODES.D]: "right",
   [KEY_CODES.LEFT]: "strafe_left",
   [KEY_CODES.RIGHT]: "strafe_right",
+  [KEY_CODES.ESC]: "paused",
 };
 
 function initControls(player_actions) {

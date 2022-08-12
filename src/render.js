@@ -78,8 +78,9 @@ function _drawBackground(context, { width, height }) {
 const _draw2dMap = (context, { map, player }, rays, { x, y }) => {
   const { map_width, map_height, map_size, layout } = map;
   const window_size = map_size * map_width;
+  const block_size = window_size / map_width;
   context.fillStyle = colors.MAP_BACKGROUND;
-  context.fillRect(x, y, window_size + map_width, window_size + map_height);
+  context.fillRect(x, y, window_size, window_size);
 
   for (let row = 0; row < map_width; row++) {
     for (let col = 0; col < map_height; col++) {
@@ -89,10 +90,10 @@ const _draw2dMap = (context, { map, player }, rays, { x, y }) => {
 
         context.fillStyle = fill_style;
         context.fillRect(
-          x + (map_size + 1) * col,
-          y + (map_size + 1) * row,
-          map_size - 1,
-          map_size - 1,
+          x + block_size * col,
+          y + block_size * row,
+          block_size - 1,
+          block_size - 1,
         );
       }
     }

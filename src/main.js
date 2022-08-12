@@ -21,11 +21,11 @@ const map = {
 
 let frame1, frame2, fps;
 
-const updatePlayer = (
-  { player_x, player_y, delta_x, delta_y, angle },
-  controls,
-  { layout, map_width },
-) => {
+const updatePlayer = ({ player, map, fps }, controls) => {
+  const { forward, backward, left, right, strafe_left, strafe_right } =
+    controls;
+  let { player_x, player_y, delta_x, delta_y, angle } = player;
+  const { layout, map_width } = map;
   const { PI } = Math;
   let x = player_x,
     y = player_y;
@@ -36,9 +36,9 @@ const updatePlayer = (
     y: delta_y < 0 ? -20 : 20,
   };
 
-  frame2 = Date.now();
-  fps = (frame2 - frame1) / 2;
-  frame1 = Date.now();
+  // frame2 = Date.now();
+  // fps = (frame2 - frame1) / 2;
+  // frame1 = Date.now();
 
   const mapbounds_x = 64 * 8,
     mapbounds_y = 64 * 8;
@@ -53,7 +53,7 @@ const updatePlayer = (
   };
 
   // control moving forward and backwards
-  if (controls.forward) {
+  if (forward) {
     const pos_y = player_position_start.y * map_width;
     const offset_y = player_position_start.y_add * map_width;
     const idx = pos_y + player_position_start.x_add;
@@ -62,7 +62,7 @@ const updatePlayer = (
     x += layout[parseInt(idx)] === 0 ? delta_x * fps : 0;
     y += layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
   }
-  if (controls.down) {
+  if (backward) {
     const pos_y = player_position_start.y * map_width;
     const offset_y = player_position_start.x_sub * map_width;
     const idx = pos_y + player_position_start.x_sub;
@@ -71,7 +71,7 @@ const updatePlayer = (
     x -= layout[parseInt(idx)] === 0 ? delta_x * fps : 0;
     y -= layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
   }
-  if (controls.strafe_left) {
+  if (strafe_left) {
     // TODO: Check where the player is strafing too for movement
     const new_angle = angle - PI / 2;
 
@@ -80,7 +80,7 @@ const updatePlayer = (
     x += strafe_delta_x;
     y += strafe_delta_y;
   }
-  if (controls.strafe_right) {
+  if (strafe_right) {
     // TODO: Check where the player is strafing too for movement
     const new_angle = angle + PI / 2;
 
@@ -91,7 +91,7 @@ const updatePlayer = (
   }
 
   // control turning left and right
-  if (controls.left) {
+  if (left) {
     angle -= 0.01 * fps;
     if (angle < 0) {
       console.log("correcting left");
@@ -100,7 +100,7 @@ const updatePlayer = (
     delta_x = Math.cos(angle);
     delta_y = Math.sin(angle);
   }
-  if (controls.right) {
+  if (right) {
     angle += 0.01 * fps;
     if (angle > 2 * PI) {
       console.log("correcting rihgt");
@@ -125,16 +125,22 @@ const updatePlayer = (
   };
 };
 
-const updateGameState = (gameState, controls, context) => {
+const updateGameState = (gameState, controls) => {
   const { player, map } = gameState;
 
-  const player_position = updatePlayer(player, controls, map, context);
+  frame2 = Date.now();
+  fps = (frame2 - frame1) / 2;
+  frame1 = Date.now();
+
+  if (fps > 4) fps = 4;
+
+  const player_position = updatePlayer(gameState, controls);
 
   const rays = castRays(player, map);
 
   return {
     ...gameState,
-
+    fps,
     player: {
       ...player,
       ...player_position,
@@ -147,6 +153,8 @@ const gameLoop = (display, gameState, controls, lastTime) => (time) => {
   let game_state = gameState;
   const seconds = (time - lastTime) / 1000;
   lastTime = time;
+
+  const { paused } = controls.getState();
 
   if (seconds < 0.2) {
     game_state = updateGameState(gameState, controls.getState());
