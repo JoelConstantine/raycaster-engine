@@ -71,6 +71,8 @@ function _castRays(
     let disH = 1000000;
     let disV = 1000000;
     let disT;
+
+    // casts vertical rays
     depth_of_field = 0;
     let arc_tan = -1 / Math.tan(ray_angle);
     if (ray_angle > PI) {
@@ -107,6 +109,7 @@ function _castRays(
       }
     }
 
+    // casts horizontal rays
     const negative_tan = -Math.tan(ray_angle);
     depth_of_field = 0;
     if (ray_angle > P2 && ray_angle < P3) {
@@ -188,7 +191,11 @@ function _castRays(
   return rays;
 }
 
-function _drawPlayer(context, { player_x, player_y, delta_x, delta_y }, scale) {
+function _drawPlayer(
+  context,
+  { player_x, player_y, delta_x, delta_y, player_offset },
+  scale,
+) {
   context.fillStyle = colors.PLAYER_COLOR;
   context.fillRect(
     player_x - scale / 2,
@@ -197,13 +204,19 @@ function _drawPlayer(context, { player_x, player_y, delta_x, delta_y }, scale) {
     1 * scale,
   );
 
-  context.lineWidth = 3;
-  context.strokeStyle = colors.PLAYER_COLOR;
-  context.beginPath();
-  context.moveTo(player_x, player_y);
-  context.lineTo(player_x + delta_x * 64, player_y + delta_y * 64);
-  context.stroke();
-  context.closePath();
+  // const offset_x = player_x + delta_x * Math.abs(player_offset.x);
+  // const offset_y = player_y + delta_y * Math.abs(player_offset.y);
+
+  // context.fillStyle = "rgb(255,75,125)";
+  // context.fillRect(offset_x, offset_y, 2, 2);
+
+  // context.lineWidth = 3;
+  // context.strokeStyle = colors.PLAYER_COLOR;
+  // context.beginPath();
+  // context.moveTo(player_x, player_y);
+  // context.lineTo(player_x + delta_x * 64, player_y + delta_y * 64);
+  // context.stroke();
+  // context.closePath();
 }
 
 function _drawBackground(context, { width, height }) {
