@@ -33,6 +33,8 @@ function castRays(
     vertical_x = player_x,
     vertical_y = player_y;
 
+  let hmt, vmt;
+
   let rays = [];
 
   for (let r = 0; r < FOV; r++) {
@@ -40,7 +42,7 @@ function castRays(
     let disV = 1000000;
     let disT;
 
-    // casts vertical rays
+    // casts horizontal rays
     depth_of_field = 0;
     let arc_tan = -1 / Math.tan(ray_angle);
     if (ray_angle > PI) {
@@ -65,11 +67,16 @@ function castRays(
       mx = parseInt(ray_x / 64);
       my = parseInt(ray_y / 64);
       map_position = my * map_width + mx;
-      if (map_position < map_width * map_height && layout[map_position] === 1) {
+      if (
+        map_position > 0 &&
+        map_position < map_width * map_height &&
+        layout[map_position] > 0
+      ) {
         horizontal_x = ray_x;
         horizontal_y = ray_y;
         disH = dist(player_x, player_y, horizontal_x, horizontal_y, ray_angle);
         depth_of_field = 8;
+        hmt = layout[map_position];
       } else {
         ray_x += x_offset;
         ray_y += y_offset;
@@ -77,7 +84,7 @@ function castRays(
       }
     }
 
-    // casts horizontal rays
+    // casts vertical rays
     const negative_tan = -Math.tan(ray_angle);
     depth_of_field = 0;
     if (ray_angle > P2 && ray_angle < P3) {
@@ -102,11 +109,16 @@ function castRays(
       mx = parseInt(ray_x / 64);
       my = parseInt(ray_y / 64);
       map_position = my * map_width + mx;
-      if (map_position < map_width * map_height && layout[map_position] === 1) {
+      if (
+        map_position > 0 &&
+        map_position < map_width * map_height &&
+        layout[map_position] > 0
+      ) {
         vertical_x = ray_x;
         vertical_y = ray_y;
         disV = dist(player_x, player_y, vertical_x, vertical_y, ray_angle);
         depth_of_field = 8;
+        vmt = layout[map_position];
       } else {
         ray_x += x_offset;
         ray_y += y_offset;
@@ -130,6 +142,7 @@ function castRays(
       ray_y = vertical_y;
       disT = disV;
       wall_type = "v";
+      hmt = vmt;
     }
 
     // compensates for distance to reduce fisheye effect
@@ -145,8 +158,14 @@ function castRays(
 
     disT = disT * Math.cos(calculated_angle);
 
-    let line_height = (map_size * 100) / disT;
-    if (line_height > 100) line_height = 100;
+    rays.push({
+      ray_x,
+      ray_y,
+      ray_angle: (ray_angle * 180) / PI,
+      disT,
+      wall_type,
+      position_value: hmt,
+    });
 
     // update the loop
     ray_angle += one_degree;
@@ -157,13 +176,6 @@ function castRays(
     if (ray_angle > 2 * PI) {
       ray_angle -= 2 * PI;
     }
-
-    rays.push({
-      ray_x,
-      ray_y,
-      line_height,
-      wall_type,
-    });
   }
 
   return rays;

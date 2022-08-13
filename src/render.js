@@ -14,8 +14,9 @@ function _renderPaused(context, { width, height }) {
   context.fillRect(0, 0, width, height);
 }
 
-function _drawRays3d(context, { rays }, window) {
+function _draw3dMap(context, { rays, map, textures }, window) {
   const { x = 0, y = 0, width = 480, height = 480 } = window;
+  const { map_size } = map;
   const line_width = width / rays.length;
 
   const middle = height / 2;
@@ -25,20 +26,71 @@ function _drawRays3d(context, { rays }, window) {
   context.fillStyle = "rgb(0,125,0)";
   context.fillRect(x, y + height / 2, width, height / 2);
 
-  rays.forEach((ray, ridx) => {
-    const height_ratio = (height * ray.line_height) / 100;
-    const line_offset = middle - height_ratio / 2;
-    const wall_color = colors.WALLS[ray.wall_type];
+  rays.forEach((ray, col) => {
+    const { disT, ray_x, ray_y, ray_angle, wall_type, position_value } = ray;
+
+    const shader_value = wall_type === "h" ? 0.5 : 1;
+
     context.lineWidth = line_width + 1;
-    context.strokeStyle = wall_color;
-    context.beginPath();
-    context.moveTo(ridx * line_width + x + line_width / 2, y + line_offset);
-    context.lineTo(
-      ridx * line_width + x + line_width / 2,
-      height - line_offset,
-    );
-    context.stroke();
-    context.closePath();
+    const full_line_height = parseInt((map_size * height) / disT);
+    // line height is measured as a percentage  of 100
+
+    const line_height = full_line_height < height ? full_line_height : height;
+    const line_offset = middle - line_height / 2;
+
+    const texture = textures
+      .filter((_, idx) => idx === position_value - 1)
+      .flat();
+
+    const step_counts = parseInt((line_height / height) * 100);
+
+    const texture_step = 32 / full_line_height;
+    const texture_offset =
+      full_line_height > height ? (full_line_height - height) / 2 : 0;
+
+    let texture_y = texture_step * texture_offset;
+    let texture_x;
+    if (ray.wall_type === "v") {
+      texture_x = parseInt(ray_y / 2) % 32;
+      if (ray_angle > 90 && ray_angle < 270) {
+        texture_x = 31 - texture_x;
+      }
+    } else {
+      texture_x = parseInt(ray_x / 2) % 32;
+      if (ray_angle < 180) {
+        texture_x = 31 - texture_x;
+      }
+    }
+
+    let texture_x_2 = parseInt((col * 32) / rays.length);
+
+    const texture_y_step = 32 / line_height;
+    //context.strokeStyle = wall_color;
+
+    const step_value = line_height / step_counts;
+    //context.lineTo(idx * line_width + x + line_width / 2, height - line_offset);
+    [...Array(parseInt(step_counts))].forEach((_, render_step) => {
+      const texture_index =
+        Math.round(
+          texture_y +
+            texture_step * ((line_height * render_step) / step_counts),
+        ) * 32;
+
+      const c = texture[texture_index + texture_x] * 255 * shader_value;
+      const stroke_style = `rgb(${c * shader_value},${c},${c})`;
+
+      const x_pos = col * line_width + x + line_width / 2;
+
+      const y_pos = y + line_offset + step_value * render_step;
+
+      //if (c) console.log(stroke_style);
+      context.strokeStyle = stroke_style;
+      context.beginPath();
+      context.moveTo(x_pos, y_pos);
+      context.lineTo(x_pos, y_pos + step_value);
+      context.closePath();
+      context.stroke();
+    });
   });
 }
 
@@ -155,9 +207,9 @@ const render = ({ canvas, viewport }, gameState) => {
   _drawBackground(ctx, canvas);
   _drawViewport(ctx, viewport);
 
-  _drawRays3d(ctx, gameState, map_3d_window);
+  _draw3dMap(ctx, gameState, map_3d_window);
 
-  _draw2dMap(ctx, gameState, gameState.rays, map_2d_window);
+  //_draw2dMap(ctx, gameState, gameState.rays, map_2d_window);
 
   if (gameState.paused) {
     _renderPaused(ctx, canvas);
