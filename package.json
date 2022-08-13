@@ -1,6 +1,6 @@
 {
   "name": "@royal/raycaster",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "A raycaster engine built from scratch following a tutorial",
   "main": "main.js",
   "scripts": {
