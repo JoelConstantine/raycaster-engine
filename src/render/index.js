@@ -188,6 +188,22 @@ const _drawViewport = (context, { width, height }) => {
   context.fillRect(0, 0, width, height);
 };
 
+const initDisplay = () => {
+  const canvas = document.getElementById("display");
+  const resolution_height = window.innerHeight;
+  const window_ratio = window.outerWidth / window.outerHeight;
+
+  const viewport = {
+    height: resolution_height,
+    width: resolution_height * window_ratio,
+  };
+
+  return {
+    canvas,
+    viewport,
+  };
+};
+
 const render = ({ canvas, viewport }, gameState) => {
   const ctx = canvas.getContext("2d");
 
@@ -218,4 +234,4 @@ const render = ({ canvas, viewport }, gameState) => {
   }
 };
 
-export { render, setDisplay };
+export { render, setDisplay, initDisplay };
