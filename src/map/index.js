@@ -8,7 +8,11 @@ function castRays(
   { player_x, player_y, angle },
   { map_width, map_size, map_height, layout },
 ) {
-  const FOV = 80;
+  const FOV = 70;
+
+  const screen_width = 320;
+
+  const factorial = FOV / screen_width;
 
   const PI = Math.PI;
   const P2 = Math.PI / 2;
@@ -37,7 +41,7 @@ function castRays(
 
   let rays = [];
 
-  for (let r = 0; r < FOV; r++) {
+  for (let r = 0; r < screen_width; r++) {
     let disH = 1000000;
     let disV = 1000000;
     let disT;
@@ -168,7 +172,7 @@ function castRays(
     });
 
     // update the loop
-    ray_angle += one_degree;
+    ray_angle += one_degree * factorial;
     if (ray_angle < 0) {
       ray_angle += 2 * PI;
     }

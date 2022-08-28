@@ -26,7 +26,7 @@ const updatePlayer = ({ player, map, fps }, controls) => {
     x_add: parseInt((x + player_offset.x) / 64),
     y_add: parseInt((y + player_offset.y) / 64),
     x_sub: parseInt((x - player_offset.x) / 64),
-    y_sub: parseInt((y - player_offset.y) / 64),
+    y_sub: Math.floor((y - player_offset.y) / 64),
   };
 
   // control moving forward and backwards
@@ -41,9 +41,9 @@ const updatePlayer = ({ player, map, fps }, controls) => {
   }
   if (backward) {
     const pos_y = player_position_start.y * map_width;
-    const offset_y = player_position_start.x_sub * map_width;
+    const offset_y = player_position_start.y_sub * map_width;
     const idx = pos_y + player_position_start.x_sub;
-    const idy = offset_y + player_position_start.y;
+    const idy = offset_y + player_position_start.x;
 
     x -= layout[parseInt(idx)] === 0 ? delta_x * fps : 0;
     y -= layout[parseInt(idy)] === 0 ? delta_y * fps : 0;
@@ -69,7 +69,7 @@ const updatePlayer = ({ player, map, fps }, controls) => {
 
   // control turning left and right
   if (left) {
-    angle -= 0.01 * fps;
+    angle -= 0.005 * fps;
     if (angle < 0) {
       angle += 2 * PI;
     }
@@ -77,7 +77,7 @@ const updatePlayer = ({ player, map, fps }, controls) => {
     delta_y = Math.sin(angle);
   }
   if (right) {
-    angle += 0.01 * fps;
+    angle += 0.005 * fps;
     if (angle > 2 * PI) {
       angle -= 2 * PI;
     }

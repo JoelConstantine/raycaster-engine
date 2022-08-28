@@ -9,29 +9,85 @@ const colors = {
   },
 };
 
+const PI = Math.PI;
+const degToRad = (a) => {
+  return (a * PI) / 180.0;
+};
+const FixAng = (a) => {
+  if (a > 359) {
+    a -= 360;
+  }
+  if (a < 0) {
+    a += 360;
+  }
+  return a;
+};
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const one_degree = 0.01745329;
+
 function _renderPaused(context, { width, height }) {
   context.fillStyle = "rgba(0,0,0,0.5)";
   context.fillRect(0, 0, width, height);
 }
 
-function _draw3dMap(context, { rays, map, textures }, window) {
-  const { x = 0, y = 0, width = 480, height = 480 } = window;
+function getPixel(url, x, y) {
+  const img = new Image();
+  img.src = url;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.drawImage(img, 0, 0);
+  return context.getImageData(x, y, 1, 1).data;
+}
+
+async function _draw3dMap(
+  render_context,
+  { rays, map, textures, player },
+  window_settings,
+) {
+  const { x = 0, y = 0, width, height } = window_settings;
+  const { context: full_context } = render_context;
+
+  const offScreenCanvas = document.createElement("canvas");
+  offScreenCanvas.width = width;
+  offScreenCanvas.height = height;
+
+  const context = offScreenCanvas.getContext("2d");
+  context.imageSmoothingEnabled = false;
+
+  offScreenCanvas.textureBuffer = document.createElement("canvas");
+  offScreenCanvas.textureBuffer.width = 32;
+  offScreenCanvas.textureBuffer.height = 32;
+
+  const texture_context = offScreenCanvas.textureBuffer.getContext("2d");
+
+  const floor_texture = textures[2];
+
+  //const processed_texture = context.createImageData(floor_texture);
+  texture_context.imageSmoothingEnabled = false;
+  texture_context.drawImage(floor_texture, 0, 0);
+
+  const image_data = texture_context.getImageData(0, 0, 32, 32);
+
+  const { player_x, player_y, angle } = player;
+
   const { map_size } = map;
   const line_width = width / rays.length;
 
   const middle = height / 2;
 
+  // set the background
   context.fillStyle = "rgb(0,255,255)";
   context.fillRect(x, y, width, height / 2);
-  context.fillStyle = "rgb(0,125,0)";
-  context.fillRect(x, y + height / 2, width, height / 2);
 
-  rays.forEach((ray, col) => {
+  rays.forEach(async (ray, col) => {
     const { disT, ray_x, ray_y, ray_angle, wall_type, position_value } = ray;
 
-    const shader_value = wall_type === "h" ? 0.5 : 1;
-
-    context.lineWidth = line_width + 1;
     const full_line_height = parseInt((map_size * height) / disT);
     // line height is measured as a percentage  of 100
 
@@ -40,7 +96,7 @@ function _draw3dMap(context, { rays, map, textures }, window) {
 
     const texture = textures
       .filter((_, idx) => idx === position_value - 1)
-      .flat();
+      .reduce((_, value) => value);
 
     const step_counts = parseInt((line_height / height) * 100);
 
@@ -62,36 +118,63 @@ function _draw3dMap(context, { rays, map, textures }, window) {
       }
     }
 
-    let texture_x_2 = parseInt((col * 32) / rays.length);
+    const left = Math.floor(col * line_width);
+    var z = disT * Math.cos(ray_angle);
+    const bottom = full_line_height > height ? height - full_line_height : 0;
 
-    const texture_y_step = 32 / line_height;
-    //context.strokeStyle = wall_color;
+    //context.drawImage(texture, 0, 0);
 
-    const step_value = line_height / step_counts;
-    //context.lineTo(idx * line_width + x + line_width / 2, height - line_offset);
-    [...Array(parseInt(step_counts))].forEach((_, render_step) => {
-      const texture_index =
-        Math.round(
-          texture_y +
-            texture_step * ((line_height * render_step) / step_counts),
-        ) * 32;
+    context.drawImage(
+      texture, // image file
+      texture_x, // sx, x location to start scaling
+      0,
+      1,
+      32,
+      parseInt(left),
+      parseInt(bottom / 2 + line_offset),
+      Math.ceil(line_width),
+      full_line_height,
+    );
 
-      const c = texture[texture_index + texture_x] * 255 * shader_value;
-      const stroke_style = `rgb(${c * shader_value},${c},${c})`;
+    if (full_line_height < height) {
+      for (
+        let floor_y = line_offset + line_height;
+        floor_y < height;
+        floor_y += 8
+      ) {
+        const dy = floor_y - height / 2;
+        const degree = degToRad(ray_angle);
+        const raFix = Math.cos(degToRad(FixAng(angle - ray_angle)));
 
-      const x_pos = col * line_width + x + line_width / 2;
+        texture_x = player_x / 2 + (Math.cos(degree) * 158 * 32) / dy / raFix;
+        texture_y = player_y / 2 - (Math.sin(degree) * 158 * 32) / dy / raFix;
 
-      const y_pos = y + line_offset + step_value * render_step;
+        const texture_index =
+          (Math.ceil(texture_y) & 31) * 32 + (Math.ceil(texture_x) & 31);
 
-      //if (c) console.log(stroke_style);
-      context.strokeStyle = stroke_style;
-      context.beginPath();
-      context.moveTo(x_pos, y_pos);
-      context.lineTo(x_pos, y_pos + step_value);
-      context.closePath();
-      context.stroke();
-    });
+        const color_value = image_data.data[texture_index - 1];
+
+        const modified_texture_index = texture_index * 4;
+
+        const r = image_data.data[modified_texture_index];
+        const g = image_data.data[modified_texture_index + 1];
+        const b = image_data.data[modified_texture_index + 2];
+
+        context.lineWidth = line_width + 1;
+        context.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+        context.beginPath();
+        context.moveTo(left, parseInt(floor_y));
+        context.lineTo(left, parseInt(floor_y) + 8);
+        context.stroke();
+        context.closePath();
+        //const pixel_info = getPixel(floor_texture.src, 0, 0);
+
+        //
+      }
+    }
   });
+
+  full_context.drawImage(offScreenCanvas, 0, 0);
 }
 
 function _drawRays2d(context, rays, { x, y, offset_x, offset_y }) {
@@ -179,13 +262,14 @@ const _draw2dMap = (context, { map, player }, rays, { x, y }) => {
 };
 
 const setDisplay = (canvas) => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth * 0.5;
+  canvas.height = window.innerHeight * 0.5;
 };
 
 const _drawViewport = (context, { width, height }) => {
   context.fillStyle = colors.VIEWPORT;
   context.fillRect(0, 0, width, height);
+  context.imageSmoothingEnabled = false;
 };
 
 const initDisplay = () => {
@@ -204,13 +288,42 @@ const initDisplay = () => {
   };
 };
 
+const _drawFloors = (
+  { context },
+  { rays, map, textures, player },
+  window_settings,
+) => {
+  const { height, width } = window_settings;
+
+  const { map_size } = map;
+
+  const texture_width = 32;
+  const floor_texture = textures[2];
+
+  const smallest_wall = rays.reduce((current_smallest, ray) => {
+    const full_line_height = parseInt((map_size * height) / ray.disT);
+
+    if (full_line_height < current_smallest) return full_line_height;
+    return current_smallest;
+  }, 100000000);
+
+  for (let y = height / 2 + smallest_wall / 2; y < height; y++) {
+    for (let x = 0; x < width; x += texture_width) {
+      context.drawImage(floor_texture, 0, y % 32, 32, 1, x, y, 32, 32);
+    }
+  }
+};
+
 const render = ({ canvas, viewport }, gameState) => {
-  const ctx = canvas.getContext("2d");
+  const context = canvas.getContext("2d");
+  const { textures } = gameState;
+
+  const render_context = { canvas, context, width: 640, height: 480 };
 
   const map_2d_window = {
-    scale: 2,
+    scale: 4,
     x: 0,
-    y: 801,
+    y: 0,
   };
 
   const map_3d_window = {
@@ -220,15 +333,16 @@ const render = ({ canvas, viewport }, gameState) => {
     height: canvas.height,
   };
 
-  _drawBackground(ctx, canvas);
-  _drawViewport(ctx, viewport);
+  _drawBackground(context, canvas);
+  _drawViewport(context, viewport);
 
-  _draw3dMap(ctx, gameState, map_3d_window);
+  //_drawFloors(render_context, gameState, map_3d_window);
+  _draw3dMap(render_context, gameState, map_3d_window);
 
-  //_draw2dMap(ctx, gameState, gameState.rays, map_2d_window);
+  //_draw2dMap(context, gameState, gameState.rays, map_2d_window);
 
   if (gameState.paused) {
-    _renderPaused(ctx, canvas);
+    _renderPaused(context, canvas);
   }
   if (gameState.debug) {
   }
